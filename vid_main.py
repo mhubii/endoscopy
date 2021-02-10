@@ -2,7 +2,7 @@ import cv2
 import os
 import numpy as np
 
-from endoscopy import ImageBuffer, ransacBoundaryCircle, boundaryRectangle
+from endoscopy import ImageBuffer, ransacBoundaryCircle, boundaryRectangle, maxRectangleInCircle
 
 if __name__ == '__main__':
     prefix = os.getcwd()
@@ -35,12 +35,15 @@ if __name__ == '__main__':
 
         top_left, shape = boundaryRectangle(avg, th=5)
         center, radius = ransacBoundaryCircle(avg, th=10, decay=1., fit='numeric', n_pts=100, n_iter=10)
+        top_left_inner, shape_inner = maxRectangleInCircle(avg.shape, center, radius)
 
+        top_left_inner, shape_inner = top_left_inner.astype(np.int), tuple(map(int, shape_inner))
         center, radius = center.astype(np.int), int(radius)
 
-        cv2.rectangle(img, (top_left[1], top_left[0]), (top_left[1] + shape[1], top_left[0] + shape[0]), (255, 255, 0), 1)
+        cv2.rectangle(img, (top_left[1], top_left[0]), (top_left[1] + shape[1], top_left[0] + shape[0]), (255, 0, 255), 1)
+        cv2.rectangle(img, (top_left_inner[1], top_left_inner[0]), (top_left_inner[1] + shape_inner[1], top_left_inner[0] + shape_inner[0]), (255, 255, 0), 1)
         cv2.circle(img, (center[1], center[0]), radius, (0,255,255), 1)
-        cv2.circle(img, (center[1], center[0]), 2, (255,0,255), 4)
+        cv2.circle(img, (center[1], center[0]), 2, (0,255,255), 2)
 
         # show output
         fps = 25
