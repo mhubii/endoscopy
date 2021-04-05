@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List
 
 
 def maxRectangleInCircle(img_shape: np.array, center: np.array, radius: float, ratio: float=3./4.) -> Tuple[np.array, tuple]:
@@ -45,6 +45,23 @@ def maxRectangleInCircle(img_shape: np.array, center: np.array, radius: float, r
     return top_left, shape
 
 
+def crop(img: np.ndarray, top_left: np.ndarray, shape: tuple) -> np.ndarray:
+    r"""Crops and image, given the top left corner and the desired shape.
+
+    Args:
+        img (np.ndarray): Image of shape HxWxC
+        top_left (np.ndarray): Top left corner
+        shape (tuple): Cropped shape in (H, W)
+
+    Return:
+        img (np.ndarray): Cropped image
+    """
+    return img[
+        top_left[0]:top_left[0] + shape[0],
+        top_left[1]:top_left[1] + shape[1]
+    ]
+
+
 def isZoomed(img: np.array, th: float=0.99) -> Tuple[bool, float]:
     r"""Determines if an image is zoomed by computing the average intensity.
 
@@ -59,3 +76,52 @@ def isZoomed(img: np.array, th: float=0.99) -> Tuple[bool, float]:
     confidence = img.mean()/img.max()
     is_zoomed = confidence >= th
     return is_zoomed, confidence
+
+
+def binaryAvg(imgs: List[np.ndarray], th: float=10.) -> np.ndarray:
+    r"""Averages buffer and return binary image with cut-off threshold th.
+
+    Args:
+        imgs (List[np.ndarray]): Image buffer
+        th (float): After averaging the buffer, everything below th is set to 0, else 255
+
+    Return:
+        avg (np.ndarray): Binary averaged buffer
+    """
+    avg = np.array(imgs)
+    avg = avg.mean(axis=0)
+    avg = np.where(avg < th, 0, 255).astype(np.uint8)
+    return avg
+
+
+def binaryVar(imgs: List[np.ndarray], th: float) -> np.ndarray:
+    r"""Averages buffer and return binary image with cut-off threshold th.
+
+    Args:
+        imgs (List[np.ndarray]): Image buffer
+        th (float): After computing the buffer's variance, everything below th is set to 255, else 0
+
+    Return:
+        var (np.ndarray): Binary variance
+    """
+    var = np.array(imgs)
+    var = var.var(axis=0)
+    var = np.where(var < th, 255, 0).astype(np.uint8)
+    return var
+
+
+def illuminationLevel(img: np.ndarray, center: np.ndarray, radius: float) -> float:
+    r"""Computes the illumination level in an area of interest, given a binary image.
+
+    Args:
+        img (np.ndarray): Binary image of shape HxW
+        center (np.ndarray): Circle's center
+        radius (float): Circle's radius
+
+    Return:
+        level (float): Illumination level within circle in [0, 1]
+    """
+    xx, yy = np.mgrid[:img.shape[0], :img.shape[1]]
+    distance_map  = np.sqrt((xx - center[0])**2 + (yy - center[1])**2)
+    level = float(img[distance_map < radius].mean())/float(img.max())
+    return level
